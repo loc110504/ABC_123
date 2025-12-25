@@ -1,0 +1,92 @@
+# Swin-Tiny Configuration for WBC Challenge
+
+data:
+  base_path: wbc-bench-2026
+  phase1_dir: wbc-bench-2026/phase1
+  phase2_train_dir: wbc-bench-2026/phase2/train
+  phase2_eval_dir: wbc-bench-2026/phase2/eval
+  phase2_test_dir: wbc-bench-2026/phase2/test
+  phase1_labels: wbc-bench-2026/phase1_label.csv
+  phase2_train_labels: wbc-bench-2026/phase2_train.csv
+  phase2_eval_labels: wbc-bench-2026/phase2_eval.csv
+  phase2_test_labels: wbc-bench-2026/phase2_test.csv
+
+model:
+  name: swin_tiny_patch4_window7_224  # Swin-Tiny Transformer
+  num_classes: 13
+  pretrained: true
+  dropout: 0.2
+
+training:
+  batch_size: 12  # Reduced from 16 for 384x384 images to save memory
+  gradient_accumulation_steps: 2  # Effective batch size = 12 * 2 = 24
+  num_epochs: 50  # Train longer for transformers
+  learning_rate: 0.0001  # 1e-4
+  weight_decay: 0.0001  # 1e-4
+  num_workers: 4
+  pin_memory: true
+  mixed_precision: true  # Use FP16 to reduce memory usage
+  early_stopping_patience: 8  # Increased from 5 to give more time for rare classes
+  min_improvement_threshold: 0.001  # Minimum improvement to reset patience counter
+  save_best_only: true
+  use_class_weights: true
+  min_class_samples_per_epoch: 50  # Guarantee at least 50 samples per class per epoch
+  label_smoothing: 0.05  # Reduced from 0.1 - label smoothing to prevent overconfidence
+  lr_warmup_epochs: 5  # Warmup for first 5 epochs
+  seed: 42
+  focal_loss:
+    enable: false  # Temporarily disabled - enable after verifying Focal Loss fix works
+    gamma: 2.0  # Focusing parameter (higher = focus more on hard examples)
+    alpha: balanced  # Use balanced alpha (inverse frequency)
+
+augmentation:
+  train:
+    resize: 384  # Original image size is 368x368, using 384 preserves more detail than 224
+    # Multi-scale training: randomly resize images during training for better scale invariance
+    multi_scale_training:
+      enable: false  # Set to true to enable multi-scale training
+      scales: [368, 384, 400]  # Scales around original size (368x368)
+      prob: 0.5  # Probability of applying multi-scale
+    rare_class_boost: true  # Apply more aggressive augmentation for rare classes (PC, PLY, PMY)
+    # Basic geometric augmentations
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+    rotation: 15
+    # Advanced geometric augmentations (medical imaging specific)
+    elastic_transform: 0.3  # Simulates tissue deformation
+    grid_distortion: 0.3  # Grid-based distortion
+    optical_distortion: 0.2  # Lens distortion simulation
+    # Advanced masking augmentations
+    gridmask: 0.0  # Grid-based masking for regularization (set to 0.0 if GridMask not available, enable if you have albumentations>=1.3.0)
+    gridmask_mode: 1  # GridMask mode (0 or 1)
+    coarse_dropout: 0.3  # Random rectangular drops
+    # Color augmentations
+    color_jitter: 0.5
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+    hue: 0.1
+    brightness_contrast: 0.7
+    hue_saturation: 0.5
+    # Medical imaging specific preprocessing
+    clahe: 0.3  # Contrast Limited Adaptive Histogram Equalization
+    sharpen: 0.3  # Enhances cell boundaries
+    # Noise and blur (scanner variations)
+    gaussian_noise: 0.2
+    gaussian_blur: 0.2
+    motion_blur: 0.2  # Movement artifacts
+    gamma: 0.3  # Exposure variations
+  val:
+    resize: 384  # Match training size - original images are 368x368
+
+paths:
+  output_dir: outputs
+  checkpoint_dir: outputs/checkpoints/swin_tiny
+  submission_dir: outputs
+  log_dir: outputs/logs
+
+evaluation:
+  metric: macro_f1
+  save_predictions: true
+  save_confusion_matrix: true
+

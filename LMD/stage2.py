@@ -3,7 +3,7 @@ import wandb
 import argparse
 import torch
 from models import CreateModel, Linear
-from data import Transforms, ISICDataset, virtual_representations, KvasirDataset
+from data import Transforms, ISICDataset, virtual_representations
 from torch.utils.data import DataLoader
 from utils import epochVal, classwise_evaluation, get_features, create_data_loaders_from_arrays, yaml_config_hook
 from utils.loss import GCELoss, FeatureDistributionConsistency
@@ -86,16 +86,12 @@ def m_step(classifier, opt, loader, loss_func, logger):
     return epoch_loss, epoch_acc
 
 
-def main(args, wandb_logger):
+def main(args, wandb_logger=None):
     transforms = Transforms(size=args.image_size)
     if 'ISIC' in args.dataset:
         train_dataset = ISICDataset(args.data_path, args.csv_file_train, transform=transforms.test_transform)
         test_dataset = ISICDataset(args.data_path, args.csv_file_test, transform=transforms.test_transform)
         val_dataset = ISICDataset(args.data_path, args.csv_file_val, transform=transforms.test_transform)
-    elif 'kvasir' in args.dataset:
-        train_dataset = KvasirDataset(args.data_path, args.csv_file_train, transform=transforms.test_transform)
-        test_dataset = KvasirDataset(args.data_path, args.csv_file_test, transform=transforms.test_transform)
-        val_dataset = KvasirDataset(args.data_path, args.csv_file_val, transform=transforms.test_transform)
 
     sampler = ImbalancedDatasetSampler(train_dataset)
 
@@ -269,18 +265,5 @@ if __name__ == "__main__":
         construct_ISIC2019LT(imbalance_factor=args.imbalance_factor, data_root=args.data_path,
                                 csv_file_root=os.path.dirname(args.csv_file_train), random_seed=args.seed)
 
-    if not args.debug:
-        wandb.login(key=[YOUR_WANDB_KEY])
 
-        config = dict()
-        for k, v in yaml_config.items():
-            config[k] = v
-
-        wandb_logger = wandb.init(
-            project=project,
-            config=config
-        )
-    else:
-        wandb_logger = None
-
-    main(args, wandb_logger)
+    main(args)

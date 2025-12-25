@@ -1,0 +1,62 @@
+# EfficientNet-V2 Configuration for WBC Challenge
+
+data:
+  base_path: wbc-bench-2026
+  phase1_dir: wbc-bench-2026/phase1
+  phase2_train_dir: wbc-bench-2026/phase2/train
+  phase2_eval_dir: wbc-bench-2026/phase2/eval
+  phase2_test_dir: wbc-bench-2026/phase2/test
+  phase1_labels: wbc-bench-2026/phase1_label.csv
+  phase2_train_labels: wbc-bench-2026/phase2_train.csv
+  phase2_eval_labels: wbc-bench-2026/phase2_eval.csv
+  phase2_test_labels: wbc-bench-2026/phase2_test.csv
+
+model:
+  name: efficientnetv2_rw_s  # EfficientNet-V2 Small
+  num_classes: 13
+  pretrained: true
+  dropout: 0.2
+
+training:
+  batch_size: 12  # Reduced from 16 for 384x384 images to save memory
+  gradient_accumulation_steps: 2  # Effective batch size = 12 * 2 = 24
+  num_epochs: 30
+  learning_rate: 0.0001  # 1e-4
+  weight_decay: 0.0001  # 1e-4
+  num_workers: 4
+  pin_memory: true
+  mixed_precision: true  # Use FP16 to reduce memory usage
+  early_stopping_patience: 5
+  save_best_only: true
+  use_class_weights: true
+  min_class_samples_per_epoch: 100  # Guarantee at least 100 samples per class per epoch (increased for PLY)
+  seed: 42
+
+augmentation:
+  train:
+    resize: 384  # Original image size is 368x368, 384 preserves detail
+    rare_class_boost: true  # Apply more aggressive augmentation for rare classes (PC, PLY, PMY)
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+    rotation: 15
+    color_jitter: 0.2
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+    hue: 0.1
+    gaussian_noise: 0.1
+    gaussian_blur: 0.1
+  val:
+    resize: 384  # Match training size - original images are 368x368
+
+paths:
+  output_dir: outputs
+  checkpoint_dir: outputs/checkpoints/efficientnetv2
+  submission_dir: outputs
+  log_dir: outputs/logs
+
+evaluation:
+  metric: macro_f1
+  save_predictions: true
+  save_confusion_matrix: true
+

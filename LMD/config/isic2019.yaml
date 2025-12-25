@@ -21,7 +21,7 @@ seed: 42
 batch_size: 64
 image_size: 224
 start_epoch: 0
-epochs: 100
+epochs: 10
 pretrained: True
 backbone: "resnet50"
 reload: False

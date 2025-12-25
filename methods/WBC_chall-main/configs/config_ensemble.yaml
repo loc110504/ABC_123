@@ -1,0 +1,67 @@
+# Ensemble Configuration for WBC Challenge
+
+# Models to include in ensemble
+ensemble:
+  models:
+    - name: swin_tiny_patch4_window7_224
+      checkpoint: outputs/checkpoints/swin_tiny/best.pth
+      weight: 1.0  # Will be normalized
+      validation_score: 0.47744  # Optional: for automatic weight calculation
+    - name: resnet50
+      checkpoint: outputs/checkpoints/resnet50/best.pth
+      weight: 1.0
+      validation_score: 0.46  # Optional
+    - name: convnext_tiny
+      checkpoint: outputs/checkpoints/convnext_tiny/best.pth
+      weight: 1.0
+      validation_score: 0.45  # Optional
+
+  # Weighting method: 'equal', 'linear', 'exponential', 'rank', or 'manual'
+  weighting_method: equal
+  
+  # If using manual weights, specify here (will override other methods)
+  manual_weights: null  # e.g., [0.4, 0.35, 0.25]
+
+# Test-time augmentation settings
+tta:
+  enable: true
+  # Basic augmentations
+  flips: true  # Horizontal and vertical flips
+  # Multi-scale inference
+  multi_scale:
+    enable: false  # Set to true for multi-scale TTA
+    scales: [224, 256, 288, 320]  # Different input sizes
+  # Rotation augmentations
+  rotation:
+    enable: false  # Set to true for rotation TTA
+    angles: [-10, -5, 5, 10]  # Rotation angles in degrees
+  # Color augmentations
+  color:
+    enable: false  # Set to true for color space TTA
+    brightness_range: [0.9, 1.1]
+    contrast_range: [0.9, 1.1]
+
+# Data configuration (same as other configs)
+data:
+  base_path: wbc-bench-2026
+  phase1_dir: wbc-bench-2026/phase1
+  phase2_train_dir: wbc-bench-2026/phase2/train
+  phase2_eval_dir: wbc-bench-2026/phase2/eval
+  phase2_test_dir: wbc-bench-2026/phase2/test
+  phase1_labels: wbc-bench-2026/phase1_label.csv
+  phase2_train_labels: wbc-bench-2026/phase2_train.csv
+  phase2_eval_labels: wbc-bench-2026/phase2_eval.csv
+  phase2_test_labels: wbc-bench-2026/phase2_test.csv
+
+# Paths
+paths:
+  output_dir: outputs
+  submission_dir: outputs
+  log_dir: outputs/logs
+
+# Evaluation
+evaluation:
+  metric: macro_f1
+  save_predictions: true
+  save_confusion_matrix: true
+
